@@ -11,7 +11,7 @@ function parsefoods(menu)
     for match in matches
         match = match.captures
         if isnothing(match[7])
-            @show match = map(x -> something(tryparse(Float64, x), x), match[1:6])
+            match = map(x -> something(tryparse(Float64, x), x), match[1:6])
 
             size = match[6] / 100
             push!(foods, (
