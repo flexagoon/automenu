@@ -117,8 +117,8 @@ function calculateplan!(breakfast, lunch)
 
     optimize!(model)
 
-    breakfast[!, "eat"] = [convert(Bool, value(x[i])) for i in brange]
-    lunch[!, "eat"] = [convert(Bool, value(y[i])) for i in lrange]
+    breakfast[!, "eat"] = [value(x[i]) > 0.5 for i in brange]
+    lunch[!, "eat"] = [value(y[i]) > 0.5 for i in lrange]
 
     return nothing
 end
@@ -135,7 +135,7 @@ function calculateplan!(lunch)
 
     optimize!(model)
 
-    lunch[!, "eat"] = [convert(Bool, value(x[i])) for i in range]
+    lunch[!, "eat"] = [value(x[i]) > 0.5 for i in range]
 
     return nothing
 end
