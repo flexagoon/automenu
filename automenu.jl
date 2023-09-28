@@ -4,6 +4,7 @@ using JuMP
 using HiGHS
 
 const foodpattern = r"([^\d;]+);([\d.]+);([\d.]+);([\d.]+);([\d.]+);\d+ руб.;(\d+) гр\.;|([\d.]+);([\d.]+);([\d.]+);([\d.]+);([^\d;]+);\d+ руб.;(\d+) гр\.;"
+const blacklist = ["Сарделька из мяса птицы", "Сыр", "Запечённая индейка"]
 function parsefoods(menu)
     matches = eachmatch(foodpattern, menu)
 
@@ -14,24 +15,28 @@ function parsefoods(menu)
             match = map(x -> something(tryparse(Float64, x), x), match[1:6])
 
             size = match[6] / 100
-            push!(foods, (
-                name=match[1],
-                calories=match[2] * size,
-                protein=match[3] * size,
-                fat=match[4] * size,
-                carbs=match[5] * size
-            ))
+            if !(match[1] in blacklist)
+                push!(foods, (
+                    name=match[1],
+                    calories=match[2] * size,
+                    protein=match[3] * size,
+                    fat=match[4] * size,
+                    carbs=match[5] * size
+                ))
+            end
         else
             match = map(x -> something(tryparse(Float64, x), x), match[7:12])
 
             size = match[6] / 100
-            push!(foods, (
-                name=match[5],
-                calories=match[1] * size,
-                protein=match[2] * size,
-                fat=match[3] * size,
-                carbs=match[4] * size
-            ))
+            if !(match[5] in blacklist)
+                push!(foods, (
+                    name=match[5],
+                    calories=match[1] * size,
+                    protein=match[2] * size,
+                    fat=match[3] * size,
+                    carbs=match[4] * size
+                ))
+            end
         end
     end
 
