@@ -43,7 +43,7 @@ function parsefoods(menu)
     return foods
 end
 
-function calculateamounts!(breakfast, lunch)
+function calculateplan!(breakfast, lunch)
     brange = 1:size(breakfast, 1)
     lrange = 1:size(lunch, 1)
 
@@ -65,8 +65,8 @@ function calculateamounts!(breakfast, lunch)
 
     optimize!(model)
 
-    breakfast[!, "amount"] = [value(x[i]) for i in brange]
-    lunch[!, "amount"] = [value(y[i]) for i in lrange]
+    breakfast[!, "eat"] = [convert(Bool, value(x[i])) for i in brange]
+    lunch[!, "eat"] = [convert(Bool, value(y[i])) for i in lrange]
 
     return nothing
 end
@@ -86,4 +86,4 @@ lunch = match(r"ОБЕД;(.*);ПОЛДНИК", text)[1]
 breakfast = parsefoods(breakfast)
 lunch = parsefoods(lunch)
 
-calculateamounts!(breakfast, lunch)
+calculateplan!(breakfast, lunch)
