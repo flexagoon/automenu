@@ -109,7 +109,7 @@ function calculateplan!(breakfast, lunch)
     lcalories = sum(lunch[i, :calories] * y[i] for i in lrange)
     @constraint(model, bcalories >= 700)
     @constraint(model, lcalories >= 700)
-    @constraint(model, bcalories + lcalories <= 1800)
+    @constraint(model, bcalories + lcalories <= 1600)
 
     bprotein = sum(breakfast[i, :protein] * x[i] for i in brange)
     lprotein = sum(lunch[i, :protein] * y[i] for i in lrange)
@@ -130,7 +130,7 @@ function calculateplan!(lunch)
     set_silent(model)
 
     @variable(model, x[range], Bin)
-    @constraint(model, 700 <= sum(lunch[i, :calories] * x[i] for i in range) <= 900)
+    @constraint(model, 700 <= sum(lunch[i, :calories] * x[i] for i in range) <= 800)
     @objective(model, Max, sum(lunch[i, :protein] * x[i] for i in range))
 
     optimize!(model)
