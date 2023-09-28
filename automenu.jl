@@ -71,6 +71,23 @@ function calculateplan!(breakfast, lunch)
     return nothing
 end
 
+function calculateplan!(lunch)
+    range = 1:size(lunch, 1)
+
+    model = Model(HiGHS.Optimizer)
+    set_silent(model)
+
+    @variable(model, x[range], Bin)
+    @constraint(model, 700 <= sum(lunch[i, :calories] * x[i] for i in range) <= 900)
+    @objective(model, Max, sum(lunch[i, :protein] * x[i] for i in range))
+
+    optimize!(model)
+
+    lunch[!, "eat"] = [convert(Bool, value(x[i])) for i in range]
+
+    return nothing
+end
+
 file = pdDocOpen("menu.pdf")
 
 pages = pdDocGetPageCount(file)
