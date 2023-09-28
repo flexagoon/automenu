@@ -1,5 +1,7 @@
 using PDFIO
 using DataFrames
+using JuMP
+using HiGHS
 
 const foodpattern = r"([^\d;]+);([\d.]+);([\d.]+);([\d.]+);([\d.]+);\d+ руб.;(\d+) гр\.;|([\d.]+);([\d.]+);([\d.]+);([\d.]+);([^\d;]+);\d+ руб.;(\d+) гр\.;"
 function parsefoods(menu)
@@ -36,6 +38,32 @@ function parsefoods(menu)
     return foods
 end
 
+function calculateamounts!(breakfast, lunch)
+    brange = 1:size(breakfast, 1)
+    lrange = 1:size(lunch, 1)
+
+    model = Model(HiGHS.Optimizer)
+    set_silent(model)
+
+    @variable(model, x[brange], Bin)
+    @variable(model, y[lrange], Bin)
+
+    bcalories = sum(breakfast[i, :calories] * x[i] for i in brange)
+    lcalories = sum(lunch[i, :calories] * y[i] for i in lrange)
+    @constraint(model, bcalories >= 700)
+    @constraint(model, lcalories >= 700)
+    @constraint(model, bcalories + lcalories <= 1800)
+
+    bprotein = sum(breakfast[i, :protein] * x[i] for i in brange)
+    lprotein = sum(lunch[i, :protein] * y[i] for i in lrange)
+    @objective(model, Max, bprotein + lprotein)
+
+    optimize!(model)
+
+    breakfast[!, "amount"] = [value(x[i]) for i in brange]
+    lunch[!, "amount"] = [value(y[i]) for i in lrange]
+end
+
 file = pdDocOpen("menu.pdf")
 
 pages = pdDocGetPageCount(file)
@@ -50,3 +78,5 @@ lunch = match(r"ОБЕД;(.*);ПОЛДНИК", text)[1]
 
 breakfast = parsefoods(breakfast)
 lunch = parsefoods(lunch)
+
+calculateamounts!(breakfast, lunch)
