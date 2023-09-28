@@ -3,8 +3,35 @@ using DataFrames
 using JuMP
 using HiGHS
 
+function parsepage(page::PDPage, includebreakfast=true)
+    text = sprint(pdPageExtractText, page)
+
+    text = replace(text, r"[\n ]{2,}" => ";", "," => ".")
+
+    lunch = match(r"ОБЕД;(.*);ПОЛДНИК", text)[1]
+    lunch = parsefoods(lunch)
+
+    if includebreakfast
+        breakfast = match(r"ЗАВТРАК;(.*);ОБЕД", text)[1]
+        breakfast = parsefoods(breakfast)
+
+        calculateplan!(breakfast, lunch)
+
+        filter!(row -> row.eat, breakfast)
+        filter!(row -> row.eat, lunch)
+
+        return breakfast, lunch
+    else
+        calculateplan!(lunch)
+
+        filter!(row -> row.eat, lunch)
+
+        return lunch
+    end
+end
+
 const foodpattern = r"([^\d;]+);([\d.]+);([\d.]+);([\d.]+);([\d.]+);\d+ руб.;(\d+) гр\.;|([\d.]+);([\d.]+);([\d.]+);([\d.]+);([^\d;]+);\d+ руб.;(\d+) гр\.;"
-const blacklist = ["Сарделька из мяса птицы", "Сыр", "Запечённая индейка"]
+const blacklist = ["Сарделька из мяса птицы", "Сыр", "Запечённая индейка", "Сосиска из мяса птицы"]
 function parsefoods(menu)
     matches = eachmatch(foodpattern, menu)
 
@@ -90,17 +117,14 @@ end
 
 file = pdDocOpen("menu.pdf")
 
-pages = pdDocGetPageCount(file)
+pagecount = pdDocGetPageCount(file)
 
-page = pdDocGetPage(file, 1)
-text = sprint(pdPageExtractText, page)
+for i in 1:pagecount
+    page = pdDocGetPage(file, i)
 
-text = replace(text, r"[\n ]{2,}" => ";", "," => ".")
-
-breakfast = match(r"ЗАВТРАК;(.*);ОБЕД", text)[1]
-lunch = match(r"ОБЕД;(.*);ПОЛДНИК", text)[1]
-
-breakfast = parsefoods(breakfast)
-lunch = parsefoods(lunch)
-
-calculateplan!(breakfast, lunch)
+    if i != 5
+        breakfast, lunch = parsepage(page)
+    else
+        lunch = parsepage(page, false)
+    end
+end
