@@ -3,6 +3,27 @@ using DataFrames
 using JuMP
 using HiGHS
 
+function parsemenu(filename::AbstractString)
+    file = pdDocOpen(filename)
+
+    pagecount = pdDocGetPageCount(file)
+
+    menu = []
+    for i in 1:pagecount
+        page = pdDocGetPage(file, i)
+
+        if i != 5
+            breakfast, lunch = parsepage(page)
+            push!(menu, (breakfast=breakfast, lunch=lunch))
+        else
+            lunch = parsepage(page, false)
+            push!(menu, (breakfast=nothing, lunch=lunch))
+        end
+    end
+
+    return menu
+end
+
 function parsepage(page::PDPage, includebreakfast=true)
     text = sprint(pdPageExtractText, page)
 
@@ -113,18 +134,4 @@ function calculateplan!(lunch)
     lunch[!, "eat"] = [convert(Bool, value(x[i])) for i in range]
 
     return nothing
-end
-
-file = pdDocOpen("menu.pdf")
-
-pagecount = pdDocGetPageCount(file)
-
-for i in 1:pagecount
-    page = pdDocGetPage(file, i)
-
-    if i != 5
-        breakfast, lunch = parsepage(page)
-    else
-        lunch = parsepage(page, false)
-    end
 end
