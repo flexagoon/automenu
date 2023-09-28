@@ -67,6 +67,8 @@ function calculateamounts!(breakfast, lunch)
 
     breakfast[!, "amount"] = [value(x[i]) for i in brange]
     lunch[!, "amount"] = [value(y[i]) for i in lrange]
+
+    return nothing
 end
 
 file = pdDocOpen("menu.pdf")
