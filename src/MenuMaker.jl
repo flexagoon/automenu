@@ -117,7 +117,7 @@ function calculateplan!(breakfast, lunch)
 
     bprotein = sum(breakfast[i, :protein] * x[i] for i in brange)
     lprotein = sum(lunch[i, :protein] * y[i] for i in lrange)
-    @constraint(model, bprotein + lprotein >= 100)
+    @constraint(model, bprotein + lprotein >= minprotein * 2)
 
     @objective(model, Min, sum(x[i] for i in brange) + sum(y[i] for i in lrange))
 
@@ -137,7 +137,7 @@ function calculateplan!(lunch)
 
     @variable(model, x[range], Bin)
     @constraint(model, mincalories <= sum(lunch[i, :calories] * x[i] for i in range) <= maxcalories)
-    @constraint(model, sum(lunch[i, :protein] * x[i] for i in range) >= 50)
+    @constraint(model, sum(lunch[i, :protein] * x[i] for i in range) >= minprotein)
     @objective(model, Min, sum(x[i] for i in range))
 
     optimize!(model)
