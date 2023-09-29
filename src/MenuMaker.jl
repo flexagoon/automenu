@@ -1,9 +1,9 @@
 module MenuMaker
 
 using PDFIO
-using DataFrames
 using JuMP
 using HiGHS
+using Test
 
 export makemenu
 
@@ -38,68 +38,56 @@ function parsepage(page::PDPage, includebreakfast=true)
 
     text = replace(text, r"[\n ]{2,}" => ";", "," => ".")
 
-    lunch = match(r"ОБЕД;(.*);ПОЛДНИК", text)[1]
-    lunch = parsefoods(lunch)
+    lunch = match(r"ОБЕД;(.*);ПОЛДНИК", text)[1] |> parsefoods
 
     if includebreakfast
-        breakfast = match(r"ЗАВТРАК;(.*);ОБЕД", text)[1]
-        breakfast = parsefoods(breakfast)
+        breakfast = match(r"ЗАВТРАК;(.*);ОБЕД", text)[1] |> parsefoods
 
-        calculateplan!(breakfast, lunch)
-
-        filter!(row -> row.eat, breakfast)
-        filter!(row -> row.eat, lunch)
-
-        return breakfast, lunch
+        return calculateplan(breakfast, lunch)
     else
-        calculateplan!(lunch)
-
-        filter!(row -> row.eat, lunch)
-
-        return lunch
+        return calculateplan(lunch)
     end
 end
 
 const foodpattern = r"([^\d;]+);([\d.]+);([\d.]+);([\d.]+);([\d.]+);\d+ руб.;(\d+) гр\.;|([\d.]+);([\d.]+);([\d.]+);([\d.]+);([^\d;]+);\d+ руб.;(\d+) гр\.;"
 function parsefoods(menu)
-    matches = eachmatch(foodpattern, menu)
-
-    foods = DataFrame()
-    for match in matches
-        match = match.captures
-        if isnothing(match[7])
-            match = map(x -> something(tryparse(Float64, x), x), match[1:6])
-
-            size = match[6] / 100
-            if !(match[1] in blacklist)
-                push!(foods, (
-                    name=match[1],
-                    calories=match[2] * size,
-                    protein=match[3] * size,
-                    fat=match[4] * size,
-                    carbs=match[5] * size
-                ))
-            end
-        else
-            match = map(x -> something(tryparse(Float64, x), x), match[7:12])
-
-            size = match[6] / 100
-            if !(match[5] in blacklist)
-                push!(foods, (
-                    name=match[5],
-                    calories=match[1] * size,
-                    protein=match[2] * size,
-                    fat=match[3] * size,
-                    carbs=match[4] * size
-                ))
-            end
+    foods = NamedTuple[]
+    for match in eachmatch(foodpattern, menu)
+        food = makefood(match.captures)
+        if !isnothing(food) && !(food.name in blacklist)
+            push!(foods, food)
         end
     end
-
     return foods
 end
 
-function calculateplan!(breakfast, lunch)
+function makefood(captures::Vector)
+    if isnothing(captures[7])
+        values = map(x -> something(tryparse(Float64, x), x), captures[1:6])
+
+        size = values[6] / 100
+        return (
+            name=values[1],
+            calories=values[2] * size,
+            protein=values[3] * size,
+            fat=values[4] * size,
+            carbs=values[5] * size
+        )
+    else
+        values = map(x -> something(tryparse(Float64, x), x), captures[7:12])
+
+        size = values[6] / 100
+        return (
+            name=values[5],
+            calories=values[1] * size,
+            protein=values[2] * size,
+            fat=values[3] * size,
+            carbs=values[4] * size
+        )
+    end
+end
+
+function calculateplan(breakfast, lunch)
     breakfast_range = 1:size(breakfast, 1)
     lunch_range = 1:size(lunch, 1)
 
@@ -109,42 +97,37 @@ function calculateplan!(breakfast, lunch)
     @variable(model, x[breakfast_range], Bin)
     @variable(model, y[lunch_range], Bin)
 
-    breakfast_calories = sum(breakfast.calories[i] * x[i] for i in breakfast_range)
-    lunch_calories = sum(lunch.calories[i] * y[i] for i in lunch_range)
+    breakfast_calories = sum(breakfast[i].calories * x[i] for i in breakfast_range)
+    lunch_calories = sum(lunch[i].calories * y[i] for i in lunch_range)
     @constraint(model, breakfast_calories >= mincalories)
     @constraint(model, lunch_calories >= mincalories)
     @constraint(model, breakfast_calories + lunch_calories <= maxcalories * 2)
 
-    bprotein = sum(breakfast.protein[i] * x[i] for i in breakfast_range)
-    lprotein = sum(lunch.protein[i] * y[i] for i in lunch_range)
+    bprotein = sum(breakfast[i].protein * x[i] for i in breakfast_range)
+    lprotein = sum(lunch[i].protein * y[i] for i in lunch_range)
     @constraint(model, bprotein + lprotein >= minprotein * 2)
 
     @objective(model, Min, sum(x) + sum(y))
 
     optimize!(model)
 
-    breakfast[!, "eat"] = [value(x[i]) > 0.5 for i in breakfast_range]
-    lunch[!, "eat"] = [value(y[i]) > 0.5 for i in lunch_range]
-
-    return nothing
+    return breakfast[filter(i -> value(x[i]) > 0.5, 1:end)], lunch[filter(i -> value(y[i]) > 0.5, 1:end)]
 end
 
-function calculateplan!(lunch)
+function calculateplan(lunch)
     range = 1:size(lunch, 1)
 
     model = Model(HiGHS.Optimizer)
     set_silent(model)
 
     @variable(model, x[range], Bin)
-    @constraint(model, mincalories <= sum(lunch.calories[i] * x[i] for i in range) <= maxcalories)
-    @constraint(model, sum(lunch.protein[i] * x[i] for i in range) >= minprotein)
+    @constraint(model, mincalories <= sum(lunch[i].calories * x[i] for i in range) <= maxcalories)
+    @constraint(model, sum(lunch[i].protein * x[i] for i in range) >= minprotein)
     @objective(model, Min, sum(x))
 
     optimize!(model)
 
-    lunch[!, "eat"] = [value(x[i]) > 0.5 for i in range]
-
-    return nothing
+    return lunch[filter(i -> value(x[i]) > 0.5, 1:end)]
 end
 
 end
