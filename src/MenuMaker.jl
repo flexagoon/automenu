@@ -7,6 +7,11 @@ using HiGHS
 
 export makemenu
 
+const blacklist = ["Сарделька из мяса птицы", "Сыр", "Запечённая индейка", "Сосиска из мяса птицы"]
+const mincalories = 600
+const maxcalories = 700
+const minprotein = 50
+
 function makemenu(filename::AbstractString)
     file = pdDocOpen(filename)
 
@@ -56,7 +61,6 @@ function parsepage(page::PDPage, includebreakfast=true)
 end
 
 const foodpattern = r"([^\d;]+);([\d.]+);([\d.]+);([\d.]+);([\d.]+);\d+ руб.;(\d+) гр\.;|([\d.]+);([\d.]+);([\d.]+);([\d.]+);([^\d;]+);\d+ руб.;(\d+) гр\.;"
-const blacklist = ["Сарделька из мяса птицы", "Сыр", "Запечённая индейка", "Сосиска из мяса птицы"]
 function parsefoods(menu)
     matches = eachmatch(foodpattern, menu)
 
@@ -107,13 +111,15 @@ function calculateplan!(breakfast, lunch)
 
     bcalories = sum(breakfast[i, :calories] * x[i] for i in brange)
     lcalories = sum(lunch[i, :calories] * y[i] for i in lrange)
-    @constraint(model, bcalories >= 700)
-    @constraint(model, lcalories >= 700)
-    @constraint(model, bcalories + lcalories <= 1600)
+    @constraint(model, bcalories >= mincalories)
+    @constraint(model, lcalories >= mincalories)
+    @constraint(model, bcalories + lcalories <= maxcalories * 2)
 
     bprotein = sum(breakfast[i, :protein] * x[i] for i in brange)
     lprotein = sum(lunch[i, :protein] * y[i] for i in lrange)
-    @objective(model, Max, bprotein + lprotein)
+    @constraint(model, bprotein + lprotein >= 100)
+
+    @objective(model, Min, sum(x[i] for i in brange) + sum(y[i] for i in lrange))
 
     optimize!(model)
 
@@ -130,8 +136,9 @@ function calculateplan!(lunch)
     set_silent(model)
 
     @variable(model, x[range], Bin)
-    @constraint(model, 700 <= sum(lunch[i, :calories] * x[i] for i in range) <= 800)
-    @objective(model, Max, sum(lunch[i, :protein] * x[i] for i in range))
+    @constraint(model, mincalories <= sum(lunch[i, :calories] * x[i] for i in range) <= maxcalories)
+    @constraint(model, sum(lunch[i, :protein] * x[i] for i in range) >= 50)
+    @objective(model, Min, sum(x[i] for i in range))
 
     optimize!(model)
 
