@@ -3,7 +3,6 @@ module MenuMaker
 using PDFIO
 using JuMP
 using HiGHS
-using Test
 
 export makemenu
 
@@ -54,7 +53,7 @@ function parsefoods(menu)
     foods = NamedTuple[]
     for match in eachmatch(foodpattern, menu)
         food = makefood(match.captures)
-        if !isnothing(food) && !(food.name in blacklist)
+        if !(food.name in blacklist)
             push!(foods, food)
         end
     end
