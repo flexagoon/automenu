@@ -100,31 +100,31 @@ function parsefoods(menu)
 end
 
 function calculateplan!(breakfast, lunch)
-    brange = 1:size(breakfast, 1)
-    lrange = 1:size(lunch, 1)
+    breakfast_range = 1:size(breakfast, 1)
+    lunch_range = 1:size(lunch, 1)
 
     model = Model(HiGHS.Optimizer)
     set_silent(model)
 
-    @variable(model, x[brange], Bin)
-    @variable(model, y[lrange], Bin)
+    @variable(model, x[breakfast_range], Bin)
+    @variable(model, y[lunch_range], Bin)
 
-    bcalories = sum(breakfast[i, :calories] * x[i] for i in brange)
-    lcalories = sum(lunch[i, :calories] * y[i] for i in lrange)
-    @constraint(model, bcalories >= mincalories)
-    @constraint(model, lcalories >= mincalories)
-    @constraint(model, bcalories + lcalories <= maxcalories * 2)
+    breakfast_calories = sum(breakfast.calories[i] * x[i] for i in breakfast_range)
+    lunch_calories = sum(lunch.calories[i] * y[i] for i in lunch_range)
+    @constraint(model, breakfast_calories >= mincalories)
+    @constraint(model, lunch_calories >= mincalories)
+    @constraint(model, breakfast_calories + lunch_calories <= maxcalories * 2)
 
-    bprotein = sum(breakfast[i, :protein] * x[i] for i in brange)
-    lprotein = sum(lunch[i, :protein] * y[i] for i in lrange)
+    bprotein = sum(breakfast.protein[i] * x[i] for i in breakfast_range)
+    lprotein = sum(lunch.protein[i] * y[i] for i in lunch_range)
     @constraint(model, bprotein + lprotein >= minprotein * 2)
 
-    @objective(model, Min, sum(x[i] for i in brange) + sum(y[i] for i in lrange))
+    @objective(model, Min, sum(x) + sum(y))
 
     optimize!(model)
 
-    breakfast[!, "eat"] = [value(x[i]) > 0.5 for i in brange]
-    lunch[!, "eat"] = [value(y[i]) > 0.5 for i in lrange]
+    breakfast[!, "eat"] = [value(x[i]) > 0.5 for i in breakfast_range]
+    lunch[!, "eat"] = [value(y[i]) > 0.5 for i in lunch_range]
 
     return nothing
 end
@@ -136,9 +136,9 @@ function calculateplan!(lunch)
     set_silent(model)
 
     @variable(model, x[range], Bin)
-    @constraint(model, mincalories <= sum(lunch[i, :calories] * x[i] for i in range) <= maxcalories)
-    @constraint(model, sum(lunch[i, :protein] * x[i] for i in range) >= minprotein)
-    @objective(model, Min, sum(x[i] for i in range))
+    @constraint(model, mincalories <= sum(lunch.calories[i] * x[i] for i in range) <= maxcalories)
+    @constraint(model, sum(lunch.protein[i] * x[i] for i in range) >= minprotein)
+    @objective(model, Min, sum(x))
 
     optimize!(model)
 
