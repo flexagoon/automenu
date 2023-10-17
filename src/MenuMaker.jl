@@ -48,7 +48,7 @@ function parsepage(page::PDPage, includebreakfast=true)
     end
 end
 
-const foodpattern = r"([^\d;]+);([\d.]+);([\d.]+);([\d.]+);([\d.]+);\d+ руб.;(\d+) гр\.;|([\d.]+);([\d.]+);([\d.]+);([\d.]+);([^\d;]+);\d+ руб.;(\d+) гр\.;"
+const foodpattern = r"([^\d;]+)[; ]?([\d.]+);([\d.]+);([\d.]+);([\d.]+);\d+ руб\.;?(\d+) гр\.;|([\d.]+);([\d.]+);([\d.]+);([\d.]+);([^\d;]+);\d+ руб.;(\d+) гр\.;"
 function parsefoods(menu)
     foods = NamedTuple[]
     for match in eachmatch(foodpattern, menu)
