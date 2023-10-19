@@ -1,6 +1,6 @@
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.3"
+julia_version = "1.9.2"
 manifest_format = "2.0"
 project_hash = "8a95c986c80317f805145e6211350de87db11f79"
 
@@ -132,15 +132,15 @@ version = "0.10.36"
 
 [[deps.HiGHS]]
 deps = ["HiGHS_jll", "MathOptInterface", "PrecompileTools", "SparseArrays"]
-git-tree-sha1 = "5baf69bbf846ec78997ed12c548d8d1550a7431d"
+git-tree-sha1 = "9d75ef949c17a2a150b91b8365a6e5bc43a2a0d3"
 uuid = "87dc4568-4c63-4d18-b0c0-bb2238e4078b"
-version = "1.6.1"
+version = "1.7.3"
 
 [[deps.HiGHS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "216e7198aeb256e7c7921ef2937d7e1e589ba6fd"
+git-tree-sha1 = "10bf0ecdf70f643bfc1948a6af0a98be3950a3fc"
 uuid = "8fd58aa0-07eb-5a78-9b36-339c94fd15ea"
-version = "1.5.3+0"
+version = "1.6.0+0"
 
 [[deps.IntegerMathUtils]]
 git-tree-sha1 = "b8ffb903da9f7b8cf695a8bead8e01814aa24b30"

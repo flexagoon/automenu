@@ -9,7 +9,7 @@ export makemenu
 const blacklist = ["Сарделька из мяса птицы", "Сыр", "Запечённая индейка", "Сосиска из мяса птицы"]
 const mincalories = 600
 const maxcalories = 700
-const minprotein = 50
+const minprotein = 35
 
 function makemenu(filename::AbstractString)
     file = pdDocOpen(filename)
@@ -70,7 +70,8 @@ function makefood(captures::Vector)
             calories=values[2] * size,
             protein=values[3] * size,
             fat=values[4] * size,
-            carbs=values[5] * size
+            carbs=values[5] * size,
+            meat=ismeat(values[1])
         )
     else
         values = map(x -> something(tryparse(Float64, x), x), captures[7:12])
@@ -81,9 +82,21 @@ function makefood(captures::Vector)
             calories=values[1] * size,
             protein=values[2] * size,
             fat=values[3] * size,
-            carbs=values[4] * size
+            carbs=values[4] * size,
+            meat=ismeat(values[5])
         )
     end
+end
+
+const meat_words = ["котлета", "филе", "стейк", "терияки", "печень", "треска", "бифштекс"]
+function ismeat(name)
+    lname = lowercase(name)
+    for word in meat_words
+        if occursin(word, lname)
+            return true
+        end
+    end
+    return false
 end
 
 function calculateplan(breakfast, lunch)
@@ -101,6 +114,9 @@ function calculateplan(breakfast, lunch)
     @constraint(model, breakfast_calories >= mincalories)
     @constraint(model, lunch_calories >= mincalories)
     @constraint(model, breakfast_calories + lunch_calories <= maxcalories * 2)
+
+    @constraint(model, sum(breakfast[i].meat * x[i] for i in breakfast_range) <= 2)
+    @constraint(model, sum(lunch[i].meat * y[i] for i in lunch_range) <= 2)
 
     bprotein = sum(breakfast[i].protein * x[i] for i in breakfast_range)
     lprotein = sum(lunch[i].protein * y[i] for i in lunch_range)
@@ -121,6 +137,7 @@ function calculateplan(lunch)
 
     @variable(model, x[range], Bin)
     @constraint(model, mincalories <= sum(lunch[i].calories * x[i] for i in range) <= maxcalories)
+    @constraint(model, sum(lunch[i].meat * x[i] for i in range) <= 2)
     @constraint(model, sum(lunch[i].protein * x[i] for i in range) >= minprotein)
     @objective(model, Min, sum(x))
 
