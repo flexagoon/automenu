@@ -31,7 +31,7 @@ The very short code that does this can be found in
 Since the menu is only available as a PDF, the only data that can be extracted
 from it is an extremely messy plaintext string with no clear delimeters between
 different data fields. I rely on a [really hacky
-regex](https://github.com/flexagoon/automenu/blob/df3075f7293dc5833c0053e3007fcc1836a6fa74/src/MenuMaker.jl#L51)
+regex](https://github.com/flexagoon/automenu/blob/42e997df73a24c774786e37fd8e71e4b31ae2117/src/MenuMaker.jl#L51)
 to parse the contents of a PDF into named tuples that I can use for further
 processing.
 
