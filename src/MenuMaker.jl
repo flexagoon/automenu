@@ -88,7 +88,20 @@ function makefood(captures::Vector)
     end
 end
 
-const meat_words = ["котлета", "филе", "стейк", "терияки", "печень", "треска", "бифштекс"]
+const meat_words = ["котлета",
+    "филе",
+    "стейк",
+    "терияки",
+    "печень",
+    "печёночные",
+    "треска",
+    "бифштекс",
+    "рыбные палочки",
+    "котлет",
+    "сайда",
+    "чахохбили",
+    "бефстроганов",
+]
 function ismeat(name)
     lname = lowercase(name)
     for word in meat_words
