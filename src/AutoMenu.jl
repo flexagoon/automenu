@@ -1,3 +1,5 @@
+#!/usr/bin/env -S julia --project=.
+
 include("MenuMaker.jl")
 include("GoogleDrive.jl")
 
