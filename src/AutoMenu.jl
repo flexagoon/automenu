@@ -14,12 +14,16 @@ using .Notifier
 
 const config = Config.load("config.toml")
 
-total_nutrition(::Nothing, lunch) = sum(lunch -> lunch.calories, lunch), sum(lunch -> lunch.protein, lunch)
-total_nutrition(breakfast, lunch) = sum(b -> b.calories, breakfast) + sum(lunch -> lunch.calories, lunch), sum(b -> b.protein, breakfast) + sum(lunch -> lunch.protein, lunch)
+function total_nutrition(breakfast, lunch)
+    dishes = vcat(breakfast, lunch)
+    calories = sum(dish -> dish.calories, dishes; init=0)
+    protein = sum(dish -> dish.protein, dishes; init=0)
+    return round(calories; digits=2), round(protein; digits=2)
+end
 
-# println("Downloading menu...")
-#
-# GoogleDrive.download("1d9p3y0gJz6YDLn2kjkzjFIGvx2NX8JNX", "menu.pdf")
+println("Downloading menu...")
+
+GoogleDrive.download("1d9p3y0gJz6YDLn2kjkzjFIGvx2NX8JNX", "menu.pdf")
 
 println("Generating meal plan...")
 menu = makemenu("menu.pdf", config)
@@ -40,10 +44,12 @@ for day in menu
         end
     end
 
-    println(plan)
-    println(plan, "ОБЕД")
-    for food in day.lunch
-        println(plan, food.name)
+    if !isnothing(day.lunch)
+        println(plan)
+        println(plan, "ОБЕД")
+        for food in day.lunch
+            println(plan, food.name)
+        end
     end
 end
 
