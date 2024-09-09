@@ -48,8 +48,7 @@ function parsepage(page::PDPage, includebreakfast=true)
     end
 end
 
-const foodpattern = r"([^\d;]+)[; ]?([\d.]+);([\d.]+);([\d.]+);([\d.]+);\d+ руб\.;?(\d+) гр\.;|([\d.]+);([\d.]+);([\d.]+);([\d.]+)[; ]?([^\d;]+);\d+ руб\.[; ]?(\d+) гр\.;"
-function parsefoods(menu)
+const foodpattern = r"([\d.]+) ([\d.]+) ([\d.]+) ([\d.]+);?([^\d;]+);\d+ руб\.[; ]?(\d+) (?>гр|мл)\."
     foods = NamedTuple[]
     for match in eachmatch(foodpattern, menu)
         food = makefood(match.captures)
@@ -61,31 +60,17 @@ function parsefoods(menu)
 end
 
 function makefood(captures::Vector)
-    if isnothing(captures[7])
-        values = map(x -> something(tryparse(Float64, x), x), captures[1:6])
+    values = map(x -> something(tryparse(Float64, x), x), captures)
 
-        size = values[6] / 100
-        return (
-            name=values[1],
-            calories=values[2] * size,
-            protein=values[3] * size,
-            fat=values[4] * size,
-            carbs=values[5] * size,
-            meat=ismeat(values[1])
-        )
-    else
-        values = map(x -> something(tryparse(Float64, x), x), captures[7:12])
-
-        size = values[6] / 100
-        return (
-            name=values[5],
-            calories=values[1] * size,
-            protein=values[2] * size,
-            fat=values[3] * size,
-            carbs=values[4] * size,
-            meat=ismeat(values[5])
-        )
-    end
+    size = values[6] / 100
+    return (
+        name=values[5],
+        calories=values[1] * size,
+        protein=values[2] * size,
+        fat=values[3] * size,
+        carbs=values[4] * size,
+        meat=ismeat(values[5])
+    )
 end
 
 const meat_words = [
