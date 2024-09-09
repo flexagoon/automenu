@@ -36,7 +36,7 @@ for day in menu
     println(plan, "$calories ккал")
     println(plan, "$protein г. Б")
 
-    if !isnothing(day.breakfast)
+    if !isempty(day.breakfast)
         println(plan)
         println(plan, "ЗАВТРАК")
         for food in day.breakfast
@@ -44,7 +44,7 @@ for day in menu
         end
     end
 
-    if !isnothing(day.lunch)
+    if !isempty(day.lunch)
         println(plan)
         println(plan, "ОБЕД")
         for food in day.lunch
