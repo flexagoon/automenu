@@ -4,6 +4,8 @@ authors = ["flexagoon <code@fxgn.dev>"]
 version = "0.1.0"
 
 [deps]
+Configurations = "5218b696-f38b-4ac9-8b61-a12ec717816d"
+Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 HiGHS = "87dc4568-4c63-4d18-b0c0-bb2238e4078b"
 JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 PDFIO = "4d0d745f-9d9a-592e-8d18-1ad8a0f42b92"

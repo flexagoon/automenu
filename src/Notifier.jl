@@ -1,15 +1,13 @@
 module Notifier
 
-using TOML
 using Telegram, Telegram.API
+using ..Config
 
 export notify
 
-config = TOML.parsefile("config.toml")
-tg = TelegramClient(config["bot_token"]; chat_id=config["chat_id"])
-
-function notify(message::AbstractString)
-    sendMessage(text = message)
+function notify(message::AbstractString, config::Config.Notifier)
+    tg = TelegramClient(config.bot_token; chat_id=config.chat_id)
+    sendMessage(tg; text=message)
 end
 
 end

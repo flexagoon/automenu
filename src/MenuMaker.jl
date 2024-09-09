@@ -3,15 +3,11 @@ module MenuMaker
 using PDFIO
 using JuMP
 using HiGHS
+using ..Config
 
 export makemenu
 
-const blacklist = ["Сарделька из мяса птицы", "Сыр", "Запечённая индейка", "Сосиска из мяса птицы"]
-const mincalories = 600
-const maxcalories = 700
-const minprotein = 35
-
-function makemenu(filename::AbstractString)
+function makemenu(filename::AbstractString, config::Config.Nutrition)
     file = pdDocOpen(filename)
 
     pagecount = pdDocGetPageCount(file)
@@ -21,10 +17,10 @@ function makemenu(filename::AbstractString)
         page = pdDocGetPage(file, i)
 
         if i != 5
-            breakfast, lunch = parsepage(page)
+            breakfast, lunch = parsepage(page, config; includebreakfast=true)
             push!(menu, (breakfast=breakfast, lunch=lunch))
         else
-            lunch = parsepage(page, false)
+            lunch = parsepage(page, config; includebreakfast=false)
             push!(menu, (breakfast=nothing, lunch=lunch))
         end
     end
@@ -32,27 +28,30 @@ function makemenu(filename::AbstractString)
     return menu
 end
 
-function parsepage(page::PDPage, includebreakfast=true)
+function parsepage(page::PDPage, config::Config.Nutrition; includebreakfast=true)
     text = sprint(pdPageExtractText, page)
 
     text = replace(text, r"[\n ]{2,}" => ";", "," => ".")
 
-    lunch = match(r"ОБЕД;(.*);ПОЛДНИК", text)[1] |> parsefoods
+    lunch = match(r"ОБЕД;(.*);ПОЛДНИК", text)[1]
+    lunch = parsefoods(lunch, config)
 
     if includebreakfast
-        breakfast = match(r"ЗАВТРАК;(.*);ОБЕД", text)[1] |> parsefoods
+        breakfast = match(r"ЗАВТРАК;(.*);ОБЕД", text)[1]
+        breakfast = parsefoods(breakfast, config)
 
-        return calculateplan(breakfast, lunch)
+        return calculateplan(breakfast, lunch, config)
     else
-        return calculateplan(lunch)
+        return calculateplan(lunch, config)
     end
 end
 
 const foodpattern = r"([\d.]+) ([\d.]+) ([\d.]+) ([\d.]+);?([^\d;]+);\d+ руб\.[; ]?(\d+) (?>гр|мл)\."
+function parsefoods(menu, config::Config.Nutrition)
     foods = NamedTuple[]
     for match in eachmatch(foodpattern, menu)
         food = makefood(match.captures)
-        if !(food.name in blacklist)
+        if !(food.name in config.blacklist)
             push!(foods, food)
         end
     end
@@ -107,7 +106,7 @@ function ismeat(name)
     return false
 end
 
-function calculateplan(breakfast, lunch)
+function calculateplan(breakfast, lunch, config::Config.Nutrition)
     breakfast_range = 1:size(breakfast, 1)
     lunch_range = 1:size(lunch, 1)
 
@@ -119,16 +118,16 @@ function calculateplan(breakfast, lunch)
 
     breakfast_calories = sum(breakfast[i].calories * x[i] for i in breakfast_range)
     lunch_calories = sum(lunch[i].calories * y[i] for i in lunch_range)
-    @constraint(model, breakfast_calories >= mincalories)
-    @constraint(model, lunch_calories >= mincalories)
-    @constraint(model, breakfast_calories + lunch_calories <= maxcalories * 2)
+    @constraint(model, breakfast_calories >= config.calories_range[1])
+    @constraint(model, lunch_calories >= config.calories_range[1])
+    @constraint(model, breakfast_calories + lunch_calories <= config.calories_range[2] * 2)
 
     @constraint(model, sum(breakfast[i].meat * x[i] for i in breakfast_range) <= 2)
     @constraint(model, sum(lunch[i].meat * y[i] for i in lunch_range) <= 2)
 
     bprotein = sum(breakfast[i].protein * x[i] for i in breakfast_range)
     lprotein = sum(lunch[i].protein * y[i] for i in lunch_range)
-    @constraint(model, bprotein + lprotein >= minprotein * 2)
+    @constraint(model, bprotein + lprotein >= config.min_protein * 2)
 
     @objective(model, Min, sum(x) + sum(y))
 
@@ -137,16 +136,16 @@ function calculateplan(breakfast, lunch)
     return breakfast[filter(i -> value(x[i]) > 0.5, 1:end)], lunch[filter(i -> value(y[i]) > 0.5, 1:end)]
 end
 
-function calculateplan(lunch)
+function calculateplan(lunch, config::Config.Nutrition)
     range = 1:size(lunch, 1)
 
     model = Model(HiGHS.Optimizer)
     set_silent(model)
 
     @variable(model, x[range], Bin)
-    @constraint(model, mincalories <= sum(lunch[i].calories * x[i] for i in range) <= maxcalories)
+    @constraint(model, config.calories_range[1] <= sum(lunch[i].calories * x[i] for i in range) <= config.calories_range[2])
     @constraint(model, sum(lunch[i].meat * x[i] for i in range) <= 2)
-    @constraint(model, sum(lunch[i].protein * x[i] for i in range) >= minprotein)
+    @constraint(model, sum(lunch[i].protein * x[i] for i in range) >= config.min_protein)
     @objective(model, Min, sum(x))
 
     optimize!(model)

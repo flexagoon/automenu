@@ -1,2 +1,13 @@
+[nutrition]
+blacklist = [
+    "Сарделька из мяса птицы",
+    "Сыр",
+    "Запечённая индейка",
+    "Сосиска из мяса птицы"
+]
+calories_range = [600, 700]
+min_protein = 35
+
+[notifier]
 bot_token = "ABCDEFG:123456"
 chat_id = "1234567890"
