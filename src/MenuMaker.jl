@@ -7,20 +7,24 @@ using ..Config
 
 export makemenu
 
-function makemenu(filename::AbstractString, config::Config.Nutrition)
+function makemenu(filename::AbstractString, config::Config.AutoMenu)
     file = pdDocOpen(filename)
 
     pagecount = pdDocGetPageCount(file)
 
     menu = []
     for i in 1:pagecount
+        if i ∉ config.schedule.lunch_days
+            continue
+        end
+
         page = pdDocGetPage(file, i)
 
-        if i != 5
-            breakfast, lunch = parsepage(page, config; includebreakfast=true)
+        if i in config.schedule.breakfast_days
+            breakfast, lunch = parsepage(page, config.nutrition; includebreakfast=true)
             push!(menu, (breakfast=breakfast, lunch=lunch))
         else
-            lunch = parsepage(page, config; includebreakfast=false)
+            lunch = parsepage(page, config.nutrition; includebreakfast=false)
             push!(menu, (breakfast=nothing, lunch=lunch))
         end
     end

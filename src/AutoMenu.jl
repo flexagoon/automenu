@@ -22,7 +22,7 @@ total_nutrition(breakfast, lunch) = sum(b -> b.calories, breakfast) + sum(lunch 
 # GoogleDrive.download("1d9p3y0gJz6YDLn2kjkzjFIGvx2NX8JNX", "menu.pdf")
 
 println("Generating meal plan...")
-menu = makemenu("menu.pdf", config.nutrition)
+menu = makemenu("menu.pdf", config)
 
 plan = IOBuffer()
 for day in menu

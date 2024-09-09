@@ -1,3 +1,7 @@
+[schedule]
+breakfast_days = [3, 4]
+lunch_days = [2, 3, 4]
+
 [nutrition]
 blacklist = [
     "Сарделька из мяса птицы",
